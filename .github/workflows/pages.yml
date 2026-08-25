@@ -26,27 +26,39 @@ jobs:
 
       - name: Fix GitHub Pages project paths
         shell: python
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
+          import os
           from pathlib import Path
+
           root = Path('.')
+          repo = os.environ['GITHUB_REPOSITORY'].split('/', 1)[1]
+          base = f'/{repo}/'
+
           for name in ['index.html', 'cart.html', 'checkout.html', 'thank-you.html']:
               p = root / name
+              if not p.exists():
+                  continue
               s = p.read_text(encoding='utf-8')
-              if '<base href="/whiffclaude1/">' not in s:
-                  s = s.replace('</head>', '<base href="/whiffclaude1/"></head>', 1)
-                  p.write_text(s, encoding='utf-8')
+              import re
+              s = re.sub(r'<base href="[^"]*">', '', s, count=1)
+              s = s.replace('<head>', f'<head><base href="{base}">', 1)
+              p.write_text(s, encoding='utf-8')
+
           for p in (root / 'stages').glob('*.html'):
               s = p.read_text(encoding='utf-8')
               s = s.replace('href="/styles.css"', 'href="../styles.css"')
               s = s.replace('href="/editorial.css"', 'href="../editorial.css"')
               s = s.replace('src="/shop.js"', 'src="../shop.js"')
               p.write_text(s, encoding='utf-8')
+
           Path('.nojekyll').touch()
 
       - name: Commit path fixes
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@noreply.github.com"
           git add index.html cart.html checkout.html thank-you.html stages .nojekyll
           if git diff --cached --quiet; then
             echo "No path fixes needed"
