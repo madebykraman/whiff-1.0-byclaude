@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/whiff-1.1/:path*",
+      "destination": "/:path*"
+    }
+  ]
+}
